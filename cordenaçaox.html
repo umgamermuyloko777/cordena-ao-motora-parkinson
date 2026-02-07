@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="screen-orientation" content="landscape">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Coordenação Motora - Jogo de Caminhos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* Aviso de orientação */
+        #rotateWarning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 20px;
+            z-index: 99999;
+            flex-direction: column;
+            padding: 30px;
+        }
+        
+        #rotateWarning .rotate-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: rotate 2s ease-in-out infinite;
+        }
+        
+        @keyframes rotate {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+        }
+        
+        @media screen and (orientation: portrait) {
+            #rotateWarning {
+                display: flex !important;
+            }
+            #gameContainer {
+                display: none !important;
+            }
+        }
+        
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        #header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 100%);
+            color: white;
+            z-index: 100;
+            font-size: 14px;
+        }
+        
+        .header-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .header-item span {
+            opacity: 0.8;
+        }
+        
+        .header-item strong {
+            font-size: 16px;
+            color: #4fd1c5;
+        }
+        
+        #canvasContainer {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 45px 10px 10px 10px;
+        }
+        
+        #gameCanvas {
+            border: 3px solid #4fd1c5;
+            border-radius: 15px;
+            background: radial-gradient(ellipse at center, #1a1a3e 0%, #0a0a1a 100%);
+            box-shadow: 0 0 30px rgba(79, 209, 197, 0.3),
+                        inset 0 0 50px rgba(0,0,0,0.5);
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .difficulty-badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .easy { background: linear-gradient(135deg, #4CAF50, #45a049); }
+        .medium { background: linear-gradient(135deg, #ff9800, #f57c00); }
+        .hard { background: linear-gradient(135deg, #f44336, #d32f2f); }
+        .expert { background: linear-gradient(135deg, #9c27b0, #7b1fa2); }
+        .master { background: linear-gradient(135deg, #e91e63, #c2185b); }
+        
+        /* Modais */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: linear-gradient(145deg, #2d3748 0%, #1a202c 100%);
+            padding: 30px 40px;
+            border-radius: 25px;
+            text-align: center;
+            color: white;
+            border: 2px solid #4fd1c5;
+            box-shadow: 0 0 50px rgba(79, 209, 197, 0.4),
+                        0 25px 50px rgba(0,0,0,0.5);
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalEnter 0.3s ease-out;
+        }
+        
+        @keyframes modalEnter {
+            from {
+                opacity: 0;
+                transform: scale(0.8) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        .modal h2 {
+            font-size: 26px;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #4fd1c5, #63b3ed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .modal p {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #a0aec0;
+        }
+        
+        .score-display {
+            font-size: 56px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 15px 0;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-item {
+            background: rgba(255,255,255,0.05);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .stat-item .label {
+            font-size: 11px;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-item .value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #4fd1c5;
+            margin-top: 5px;
+        }
+        
+        .stars {
+            font-size: 36px;
+            margin: 15px 0;
+        }
+        
+        .star {
+            color: #2d3748;
+            text-shadow: none;
+            transition: all 0.3s ease;
+        }
+        
+        .star.active {
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            animation: starPop 0.5s ease-out;
+        }
+        
+        @keyframes starPop {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+        
+        .btn {
+            padding: 14px 35px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin: 8px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-continue {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
+        }
+        
+        .btn-continue:hover, .btn-continue:active {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(72, 187, 120, 0.6);
+        }
+        
+        .btn-exit {
+            background: linear-gradient(135deg, #fc8181, #f56565);
+            color: white;
+            box-shadow: 0 4px 15px rgba(252, 129, 129, 0.4);
+        }
+        
+        .btn-exit:hover, .btn-exit:active {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(252, 129, 129, 0.6);
+        }
+        
+        .btn-start {
+            background: linear-gradient(135deg, #4fd1c5, #38b2ac);
+            color: white;
+            font-size: 20px;
+            padding: 18px 50px;
+            box-shadow: 0 4px 20px rgba(79, 209, 197, 0.5);
+        }
+        
+        .btn-start:hover, .btn-start:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(79, 209, 197, 0.7);
+        }
+        
+        .instructions {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .instructions h3 {
+            color: #4fd1c5;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .instructions p {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .instruction-icons {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+        }
+        
+        .instruction-icon {
+            text-align: center;
+        }
+        
+        .instruction-icon .icon {
+            font-size: 30px;
+            margin-bottom: 5px;
+        }
+        
+        .instruction-icon .text {
+            font-size: 11px;
+            color: #718096;
+        }
+        
+        /* Indicador de progresso */
+        #progressBar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        #progressFill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4fd1c5, #63b3ed);
+            transition: width 0.3s ease;
+        }
+        
+        /* Efeito de feedback visual */
+        .feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 80px;
+            z-index: 500;
+            pointer-events: none;
+            animation: feedbackPop 0.5s ease-out forwards;
+        }
+        
+        @keyframes feedbackPop {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+        }
+        
+        /* Tela de encerramento */
+        #exitScreen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            flex-direction: column;
+            color: white;
+            text-align: center;
+        }
+        
+        #exitScreen h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #4fd1c5, #63b3ed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        #exitScreen .final-stats {
+            background: rgba(255,255,255,0.05);
+            padding: 30px;
+            border-radius: 20px;
+            margin: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Aviso para girar o dispositivo -->
+    <div id="rotateWarning">
+        <div class="rotate-icon">📱</div>
+        <h2>Gire seu dispositivo</h2>
+        <p>Por favor, use o modo paisagem para jogar</p>
+    </div>
+    
+    <!-- Container principal do jogo -->
+    <div id="gameContainer">
+        <div id="header">
+            <div class="header-item">
+                <span>📊 Nível:</span>
+                <strong id="levelDisplay">1</strong>
+                <span id="difficultyBadge" class="difficulty-badge easy">Fácil</span>
+            </div>
+            <div class="header-item">
+                <span>🎯 Precisão:</span>
+                <strong id="accuracyDisplay">100%</strong>
+            </div>
+            <div class="header-item">
+                <span>✅ Checkpoints:</span>
+                <strong id="checkpointDisplay">0/0</strong>
+            </div>
+            <div class="header-item">
+                <span>⏱️ Tempo:</span>
+                <strong id="timeDisplay">0:00</strong>
+            </div>
+        </div>
+        
+        <div id="canvasContainer">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        
+        <div id="progressBar">
+            <div id="progressFill"></div>
+        </div>
+    </div>
+    
+    <!-- Modal Inicial -->
+    <div id="startModal" class="modal" style="display: flex;">
+        <div class="modal-content">
+            <h2>🎯 Jogo de Coordenação Motora</h2>
+            <p style="font-size: 18px; color: white;">Treine sua precisão e controle!</p>
+            
+            <div class="instructions">
+                <h3>📋 Como Jogar</h3>
+                <p>
+                    Trace o caminho do <span style="color: #48bb78;">●</span> ponto verde 
+                    até o <span style="color: #f56565;">●</span> ponto vermelho, 
+                    seguindo a linha pontilhada e passando pelos checkpoints.
+                </p>
+                <div class="instruction-icons">
+                    <div class="instruction-icon">
+                        <div class="icon">👆</div>
+                        <div class="text">Toque</div>
+                    </div>
+                    <div class="instruction-icon">
+                        <div class="icon">✏️</div>
+                        <div class="text">S Pen</div>
+                    </div>
+                    <div class="instruction-icon">
+                        <div class="icon">🎯</div>
+                        <div class="text">Precisão</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn btn-start" id="startBtn">🚀 Iniciar Jogo</button>
+        </div>
+    </div>
+    
+    <!-- Modal de Fim de Nível -->
+    <div id="endLevelModal" class="modal">
+        <div class="modal-content">
+            <h2 id="levelCompleteTitle">🎉 Nível Completo!</h2>
+            
+            <div class="stars" id="starsContainer">
+                <span class="star" id="star1">★</span>
+                <span class="star" id="star2">★</span>
+                <span class="star" id="star3">★</span>
+            </div>
+            
+            <p style="color: #718096;">Sua pontuação</p>
+            <div class="score-display" id="finalScore">0</div>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="label">Precisão</div>
+                    <div class="value" id="accuracyResult">100%</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">Tempo</div>
+                    <div class="value" id="timeResult">0:00</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">Checkpoints</div>
+                    <div class="value" id="checkpointResult">0/0</div>
+                </div>
+            </div>
+            
+            <p id="nextLevelInfo" style="color: #4fd1c5; font-size: 14px;"></p>
+            
+            <div style="margin-top: 20px;">
+                <button class="btn btn-continue" id="continueBtn">✅ Deseja Continuar</button>
+                <button class="btn btn-exit" id="exitBtn">❌ Encerrar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tela de Encerramento -->
+    <div id="exitScreen">
+        <h2>🏆 Obrigado por Jogar!</h2>
+        <div class="final-stats">
+            <p style="font-size: 18px; color: white;">Resumo da Sessão</p>
+            <div class="stats-grid" style="margin-top: 20px;">
+                <div class="stat-item">
+                    <div class="label">Níveis Completos</div>
+                    <div class="value" id="totalLevels">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">Pontuação Total</div>
+                    <div class="value" id="totalScore">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">Maior Nível</div>
+                    <div class="value" id="maxLevel">0</div>
+                </div>
+            </div>
+        </div>
+        <p style="color: #718096; margin-top: 20px;">Você pode fechar esta aba</p>
+    </div>
+
+    <script>
+        // ==================== CONFIGURAÇÕES DO JOGO ====================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Estado do jogo
+        let state = {
+            currentLevel: 1,
+            isDrawing: false,
+            gameStarted: false,
+            pathPoints: [],
+            userPath: [],
+            startPoint: null,
+            endPoint: null,
+            startTime: null,
+            timerInterval: null,
+            accuracy: 100,
+            pathWidth: 50,
+            checkpoints: [],
+            reachedCheckpoints: [],
+            totalScore: 0,
+            outOfPathCount: 0,
+            hasStarted: false
+        };
+        
+        // ==================== REDIMENSIONAMENTO ====================
+        function resizeCanvas() {
+            const container = document.getElementById('canvasContainer');
+            const padding = 20;
+            
+            const maxWidth = container.clientWidth - padding;
+            const maxHeight = container.clientHeight - padding;
+            
+            // Manter proporção 16:9
+            const aspectRatio = 16 / 9;
+            
+            let width = maxWidth;
+            let height = width / aspectRatio;
+            
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = height * aspectRatio;
+            }
+            
+            canvas.width = Math.floor(width);
+            canvas.height = Math.floor(height);
+            
+            if (state.gameStarted && state.pathPoints.length > 0) {
+                generatePath();
+            }
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(resizeCanvas, 200);
+        });
+        
+        resizeCanvas();
+        
+        // ==================== GERAÇÃO DO CAMINHO ====================
+        function generatePath() {
+            state.pathPoints = [];
+            state.checkpoints = [];
+            state.reachedCheckpoints = [];
+            state.userPath = [];
+            state.hasStarted = false;
+            
+            const margin = 50;
+            const w = canvas.width - margin * 2;
+            const h = canvas.height - margin * 2;
+            
+            // Configurações baseadas no nível
+            let config = getLevelConfig(state.currentLevel);
+            state.pathWidth = config.pathWidth;
+            
+            updateDifficultyBadge(config.difficultyName, config.difficultyClass);
+            
+            // Gerar pontos de controle
+            const numPoints = config.complexity;
+            let controlPoints = [];
+            
+            // Ponto inicial (lado esquerdo)
+            controlPoints.push({ 
+                x: margin, 
+                y: margin + h * 0.3 + Math.random() * h * 0.4 
+            });
+            
+            // Pontos intermediários
+            for (let i = 1; i < numPoints - 1; i++) {
+                const progress = i / (numPoints - 1);
+                const x = margin + w * progress;
+                const y = margin + Math.random() * h;
+                controlPoints.push({ x, y });
+            }
+            
+            // Ponto final (lado direito)
+            controlPoints.push({ 
+                x: canvas.width - margin, 
+                y: margin + h * 0.3 + Math.random() * h * 0.4 
+            });
+            
+            // Criar caminho suavizado usando curvas
+            for (let i = 0; i < controlPoints.length - 1; i++) {
+                const p0 = controlPoints[Math.max(0, i - 1)];
+                const p1 = controlPoints[i];
+                const p2 = controlPoints[i + 1];
+                const p3 = controlPoints[Math.min(controlPoints.length - 1, i + 2)];
+                
+                const steps = 40;
+                for (let t = 0; t <= 1; t += 1 / steps) {
+                    const point = catmullRom(p0, p1, p2, p3, t);
+                    
+                    // Adicionar ondulação baseada na dificuldade
+                    const wave = Math.sin(t * Math.PI * config.waveFrequency) * config.waveAmplitude;
+                    point.y += wave;
+                    
+                    // Limitar aos limites do canvas
+                    point.x = Math.max(margin, Math.min(canvas.width - margin, point.x));
+                    point.y = Math.max(margin, Math.min(canvas.height - margin, point.y));
+                    
+                    state.pathPoints.push(point);
+                }
+            }
+            
+            // Definir checkpoints ao longo do caminho
+            const numCheckpoints = Math.min(5, 2 + Math.floor(state.currentLevel / 2));
+            const checkpointInterval = Math.floor(state.pathPoints.length / (numCheckpoints + 1));
+            
+            for (let i = 1; i <= numCheckpoints; i++) {
+                const index = i * checkpointInterval;
+                if (index < state.pathPoints.length - 10) {
+                    state.checkpoints.push({
+                        ...state.pathPoints[index],
+                        index: i - 1
+                    });
+                }
+            }
+            
+            state.startPoint = state.pathPoints[0];
+            state.endPoint = state.pathPoints[state.pathPoints.length - 1];
+            
+            updateCheckpointDisplay();
+            drawPath();
+        }
+        
+        // Interpolação Catmull-Rom para curvas suaves
+        function catmullRom(p0, p1, p2, p3, t) {
+            const t2 = t * t;
+            const t3 = t2 * t;
+            
+            return {
+                x: 0.5 * ((2 * p1.x) +
+                    (-p0.x + p2.x) * t +
+                    (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+                    (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+                y: 0.5 * ((2 * p1.y) +
+                    (-p0.y + p2.y) * t +
+                    (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+                    (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3)
+            };
+        }
+        
+        // Configuração de cada nível
+        function getLevelConfig(level) {
+            if (level <= 3) {
+                return {
+                    difficultyName: 'Fácil',
+                    difficultyClass: 'easy',
+                    complexity: 3 + level,
+                    pathWidth: 55 - level * 5,
+                    waveFrequency: 1 + level * 0.5,
+                    waveAmplitude: 10 + level * 5
+                };
+            } else if (level <= 6) {
+                return {
+                    difficultyName: 'Médio',
+                    difficultyClass: 'medium',
+                    complexity: 5 + level,
+                    pathWidth: 40 - (level - 3) * 3,
+                    waveFrequency: 2 + level * 0.5,
+                    waveAmplitude: 25 + (level - 3) * 10
+                };
+            } else if (level <= 10) {
+                return {
+                    difficultyName: 'Difícil',
+                    difficultyClass: 'hard',
+                    complexity: 8 + level,
+                    pathWidth: 30 - (level - 6) * 2,
+                    waveFrequency: 3 + level * 0.5,
+                    waveAmplitude: 40 + (level - 6) * 8
+                };
+            } else if (level <= 15) {
+                return {
+                    difficultyName: 'Avançado',
+                    difficultyClass: 'expert',
+                    complexity: 12 + level,
+                    pathWidth: Math.max(18, 22 - (level - 10)),
+                    waveFrequency: 4 + level * 0.3,
+                    waveAmplitude: 50 + (level - 10) * 5
+                };
+            } else {
+                return {
+                    difficultyName: 'Mestre',
+                    difficultyClass: 'master',
+                    complexity: 15 + Math.floor(level / 2),
+                    pathWidth: Math.max(15, 18 - Math.floor((level - 15) / 2)),
+                    waveFrequency: 5 + level * 0.2,
+                    waveAmplitude: 60 + (level - 15) * 3
+                };
+            }
+        }
+        
+        function updateDifficultyBadge(text, className) {
+            const badge = document.getElementById('difficultyBadge');
+            badge.textContent = text;
+            badge.className = 'difficulty-badge ' + className;
+        }
+        
+        function updateCheckpointDisplay() {
+            document.getElementById('checkpointDisplay').textContent = 
+                `${state.reachedCheckpoints.length}/${state.checkpoints.length}`;
+        }
+        
+        // ==================== DESENHO ====================
+        function drawPath() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Desenhar grade de fundo sutil
+            drawGrid();
+            
+            // Sombra do caminho
+            ctx.beginPath();
+            ctx.moveTo(state.pathPoints[0].x + 3, state.pathPoints[0].y + 3);
+            for (let i = 1; i < state.pathPoints.length; i++) {
+                ctx.lineTo(state.pathPoints[i].x + 3, state.pathPoints[i].y + 3);
+            }
+            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+            ctx.lineWidth = state.pathWidth + 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            
+            // Caminho principal (área permitida)
+            ctx.beginPath();
+            ctx.moveTo(state.pathPoints[0].x, state.pathPoints[0].y);
+            for (let i = 1; i < state.pathPoints.length; i++) {
+                ctx.lineTo(state.pathPoints[i].x, state.pathPoints[i].y);
+            }
+            
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            gradient.addColorStop(0, '#2d3748');
+            gradient.addColorStop(0.5, '#4a5568');
+            gradient.addColorStop(1, '#2d3748');
+            
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = state.pathWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            
+            // Borda do caminho
+            ctx.strokeStyle = 'rgba(79, 209, 197, 0.3)';
+            ctx.lineWidth = state.pathWidth + 2;
+            ctx.stroke();
+            
+            // Linha central pontilhada (guia)
+            ctx.beginPath();
+            ctx.moveTo(state.pathPoints[0].x, state.pathPoints[0].y);
+            for (let i = 1; i < state.pathPoints.length; i++) {
+                ctx.lineTo(state.pathPoints[i].x, state.pathPoints[i].y);
+            }
+            ctx.strokeStyle = 'rgba(99, 179, 237, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 8]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Desenhar checkpoints
+            state.checkpoints.forEach((cp, index) => {
+                const reached = state.reachedCheckpoints.includes(index);
+                
+                // Anel externo
+                ctx.beginPath();
+                ctx.arc(cp.x, cp.y, 12, 0, Math.PI * 2);
+                ctx.fillStyle = reached ? 'rgba(72, 187, 120, 0.3)' : 'rgba(237, 137, 54, 0.3)';
+                ctx.fill();
+                
+                // Círculo interno
+                ctx.beginPath();
+                ctx.arc(cp.x, cp.y, 8, 0, Math.PI * 2);
+                ctx.fillStyle = reached ? '#48bb78' : '#ed8936';
+                ctx.fill();
+                
+                // Ícone
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 10px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(reached ? '✓' : (index + 1), cp.x, cp.y);
+            });
+            
+            // Desenhar ponto inicial
+            drawEndpoint(state.startPoint, '#48bb78', '▶');
+            
+            // Desenhar ponto final
+            drawEndpoint(state.endPoint, '#f56565', '🏁');
+            
+            // Desenhar caminho do usuário
+            if (state.userPath.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(state.userPath[0].x, state.userPath[0].y);
+                
+                for (let i = 1; i < state.userPath.length; i++) {
+                    ctx.lineTo(state.userPath[i].x, state.userPath[i].y);
+                }
+                
+                // Gradiente para o traço do usuário
+                const userGradient = ctx.createLinearGradient(
+                    state.userPath[0].x, state.userPath[0].y,
+                    state.userPath[state.userPath.length - 1].x,
+                    state.userPath[state.userPath.length - 1].y
+                );
+                userGradient.addColorStop(0, '#4fd1c5');
+                userGradient.addColorStop(1, '#63b3ed');
+                
+                ctx.strokeStyle = userGradient;
+                ctx.lineWidth = 5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+                
+                // Brilho
+                ctx.strokeStyle = 'rgba(79, 209, 197, 0.4)';
+                ctx.lineWidth = 10;
+                ctx.stroke();
+            }
+            
+            // Atualizar barra de progresso
+            updateProgressBar();
+        }
+        
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            
+            const gridSize = 30;
+            
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+        
+        function drawEndpoint(point, color, icon) {
+            // Anel pulsante
+            const pulseSize = 20 + Math.sin(Date.now() / 200) * 3;
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, pulseSize, 0, Math.PI * 2);
+            ctx.fillStyle = color + '33';
+            ctx.fill();
+            
+            // Círculo principal
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 15, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Texto/Ícone
+            ctx.fillStyle = 'white';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(icon, point.x, point.y);
+        }
+        
+        function updateProgressBar() {
+            if (state.userPath.length === 0 || state.pathPoints.length === 0) {
+                document.getElementById('progressFill').style.width = '0%';
+                return;
+            }
+            
+            const lastUserPoint = state.userPath[state.userPath.length - 1];
+            let minDist = Infinity;
+            let closestIndex = 0;
+            
+            for (let i = 0; i < state.pathPoints.length; i++) {
+                const dist = distance(lastUserPoint, state.pathPoints[i]);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestIndex = i;
+                }
+            }
+            
+            const progress = (closestIndex / state.pathPoints.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+        
+        // ==================== LÓGICA DO JOGO ====================
+        function distance(p1, p2) {
+            return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+        }
+        
+        function isPointOnPath(point) {
+            for (let i = 0; i < state.pathPoints.length; i++) {
+                if (distance(point, state.pathPoints[i]) <= state.pathWidth / 2) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        function checkCheckpoints(point) {
+            state.checkpoints.forEach((cp, index) => {
+                if (!state.reachedCheckpoints.includes(index)) {
+                    if (distance(point, cp) <= state.pathWidth / 2 + 5) {
+                        state.reachedCheckpoints.push(index);
+                        updateCheckpointDisplay();
+                        showFeedback('✓');
+                    }
+                }
+            });
+        }
+        
+        function checkEnd(point) {
+            return distance(point, state.endPoint) <= 25;
+        }
+        
+        function showFeedback(emoji) {
+            const feedback = document.createElement('div');
+            feedback.className = 'feedback';
+            feedback.textContent = emoji;
+            document.body.appendChild(feedback);
+            
+            setTimeout(() => feedback.remove(), 500);
+        }
+        
+        // ==================== EVENTOS DE TOQUE/CANETA ====================
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            let clientX, clientY;
+            
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+        
+        function handleStart(e) {
+            e.preventDefault();
+            if (!state.gameStarted) return;
+            
+            const pos = getPointerPos(e);
+            
+            // Verificar se começou próximo ao ponto inicial
+            if (distance(pos, state.startPoint) <= 35) {
+                state.isDrawing = true;
+                state.userPath = [pos];
+                
+                if (!state.hasStarted) {
+                    state.hasStarted = true;
+                    state.startTime = Date.now();
+                    startTimer();
+                }
+            }
+        }
+        
+        function handleMove(e) {
+            e.preventDefault();
+            if (!state.isDrawing || !state.gameStarted) return;
+            
+            const pos = getPointerPos(e);
+            state.userPath.push(pos);
+            
+            // Verificar se está no caminho
+            if (!isPointOnPath(pos)) {
+                state.outOfPathCount++;
+                if (state.outOfPathCount % 3 === 0) { // Reduz a cada 3 pontos fora
+                    state.accuracy = Math.max(0, state.accuracy - 1);
+                }
+            }
+            
+            // Verificar checkpoints
+            checkCheckpoints(pos);
+            
+            // Atualizar display
+            document.getElementById('accuracyDisplay').textContent = Math.round(state.accuracy) + '%';
+            
+            // Verificar fim
+            if (checkEnd(pos)) {
+                endLevel(true);
+            }
+            
+            drawPath();
+        }
+        
+        function handleEnd(e) {
+            e.preventDefault();
+            state.isDrawing = false;
+        }
+        
+        // Eventos para toque e S Pen
+        canvas.addEventListener('pointerdown', handleStart, { passive: false });
+        canvas.addEventListener('pointermove', handleMove, { passive: false });
+        canvas.addEventListener('pointerup', handleEnd, { passive: false });
+        canvas.addEventListener('pointercancel', handleEnd, { passive: false });
+        canvas.addEventListener('pointerleave', handleEnd, { passive: false });
+        
+        // Touch events como fallback
+        canvas.addEventListener('touchstart', handleStart, { passive: false });
+        canvas.addEventListener('touchmove', handleMove, { passive: false });
+        canvas.addEventListener('touchend', handleEnd, { passive: false });
+        canvas.addEventListener('touchcancel', handleEnd, { passive: false });
+        
+        // Prevenir zoom e scroll
+        document.addEventListener('touchmove', (e) => {
+            if (state.gameStarted) e.preventDefault();
+        }, { passive: false });
+        
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+        document.addEventListener('gesturechange', (e) => e.preventDefault());
+        document.addEventListener('gestureend', (e) => e.preventDefault());
+        
+        // ==================== TIMER ====================
+        function startTimer() {
+            state.timerInterval = setInterval(() => {
+                if (!state.startTime) return;
+                
+                const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('timeDisplay').textContent = 
+                    `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }, 100);
+        }
+        
+        function stopTimer() {
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+                state.timerInterval = null;
+            }
+        }
+        
+        // ==================== PONTUAÇÃO ====================
+        function calculateScore() {
+            const timeElapsed = state.startTime ? (Date.now() - state.startTime) / 1000 : 0;
+            
+            // Bônus de tempo (quanto mais rápido, mais pontos)
+            const maxTimeBonus = 200;
+            const timeBonus = Math.max(0, maxTimeBonus - timeElapsed * 3);
+            
+            // Bônus de checkpoints
+            const checkpointBonus = state.checkpoints.length > 0 
+                ? (state.reachedCheckpoints.length / state.checkpoints.length) * 150 
+                : 0;
+            
+            // Bônus de nível
+            const levelBonus = state.currentLevel * 25;
+            
+            // Pontuação baseada na precisão
+            const accuracyScore = state.accuracy * 4;
+            
+            const totalScore = Math.round(accuracyScore + timeBonus + checkpointBonus + levelBonus);
+            
+            return Math.max(0, totalScore);
+        }
+        
+        function getStars(score) {
+            if (score >= 500) return 3;
+            if (score >= 300) return 2;
+            if (score >= 100) return 1;
+            return 0;
+        }
+        
+        // ==================== FIM DE NÍVEL ====================
+        function endLevel(success) {
+            stopTimer();
+            state.gameStarted = false;
+            
+            const score = calculateScore();
+            const stars = getStars(score);
+            const timeElapsed = state.startTime ? Math.floor((Date.now() - state.startTime) / 1000) : 0;
+            const minutes = Math.floor(timeElapsed / 60);
+            const seconds = timeElapsed % 60;
+            
+            // Atualizar modal
+            document.getElementById('levelCompleteTitle').textContent = 
+                success ? '🎉 Nível Completo!' : '😅 Continue Tentando!';
+            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('accuracyResult').textContent = Math.round(state.accuracy) + '%';
+            document.getElementById('timeResult').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('checkpointResult').textContent = 
+                `${state.reachedCheckpoints.length}/${state.checkpoints.length}`;
+            
+            // Mostrar estrelas com animação
+            for (let i = 1; i <= 3; i++) {
+                const star = document.getElementById('star' + i);
+                star.classList.remove('active');
+                
+                if (i <= stars) {
+                    setTimeout(() => {
+                        star.classList.add('active');
+                    }, i * 200);
+                }
+            }
+            
+            // Info do próximo nível
+            const nextConfig = getLevelConfig(state.currentLevel + 1);
+            document.getElementById('nextLevelInfo').textContent = 
+                `Próximo nível: ${state.currentLevel + 1} (${nextConfig.difficultyName})`;
+            
+            state.totalScore += score;
+            
+            document.getElementById('endLevelModal').style.display = 'flex';
+        }
+        
+        // ==================== CONTROLES DO JOGO ====================
+        function startGame() {
+            document.getElementById('startModal').style.display = 'none';
+            state.gameStarted = true;
+            resizeCanvas();
+            generatePath();
+            
+            // Animação de início
+            requestAnimationFrame(function animate() {
+                if (state.gameStarted) {
+                    drawPath();
+                    requestAnimationFrame(animate);
+                }
+            });
+        }
+        
+        function nextLevel() {
+            state.currentLevel++;
+            state.accuracy = 100;
+            state.startTime = null;
+            state.userPath = [];
+            state.reachedCheckpoints = [];
+            state.outOfPathCount = 0;
+            state.hasStarted = false;
+            
+            document.getElementById('levelDisplay').textContent = state.currentLevel;
+            document.getElementById('accuracyDisplay').textContent = '100%';
+            document.getElementById('timeDisplay').textContent = '0:00';
+            document.getElementById('progressFill').style.width = '0%';
+            
+            document.getElementById('endLevelModal').style.display = 'none';
+            
+            state.gameStarted = true;
+            generatePath();
+        }
+        
+        function exitGame() {
+            document.getElementById('endLevelModal').style.display = 'none';
+            
+            // Mostrar estatísticas finais
+            document.getElementById('totalLevels').textContent = state.currentLevel;
+            document.getElementById('totalScore').textContent = state.totalScore;
+            document.getElementById('maxLevel').textContent = state.currentLevel;
+            
+            document.getElementById('exitScreen').style.display = 'flex';
+            
+            // Tentar fechar a janela após 3 segundos
+            setTimeout(() => {
+                try {
+                    window.close();
+                } catch (e) {
+                    // Se não conseguir fechar, mantém a tela de encerramento
+                }
+            }, 3000);
+        }
+        
+        // ==================== EVENT LISTENERS ====================
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('startBtn').addEventListener('touchend', (e) => {
+            e.preventDefault();
+            startGame();
+        });
+        
+        document.getElementById('continueBtn').addEventListener('click', nextLevel);
+        document.getElementById('continueBtn').addEventListener('touchend', (e) => {
+            e.preventDefault();
+            nextLevel();
+        });
+        
+        document.getElementById('exitBtn').addEventListener('click', exitGame);
+        document.getElementById('exitBtn').addEventListener('touchend', (e) => {
+            e.preventDefault();
+            exitGame();
+        });
+        
+        // Forçar orientação landscape se disponível
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(() => {
+                console.log('Não foi possível bloquear a orientação');
+            });
+        }
+        
+        // Prevenir comportamentos padrão que interferem no jogo
+        document.body.addEventListener('touchstart', (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
