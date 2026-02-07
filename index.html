@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="screen-orientation" content="landscape">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Coordenação Motora - Jogo de Caminhos</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Aviso para girar o dispositivo -->
+    <div id="rotateWarning">
+        <div class="rotate-icon">📱</div>
+        <h2>Gire seu dispositivo</h2>
+        <p>Por favor, use o modo paisagem para jogar</p>
+    </div>
+    
+    <!-- Container principal do jogo -->
+    <div id="gameContainer">
+        <div id="header">
+            <div class="header-item">
+                <span>📊 Nível:</span>
+                <strong id="levelDisplay">1</strong>
+                <span id="difficultyBadge" class="difficulty-badge easy">Fácil</span>
+            </div>
+            <div class="header-item">
+                <span>🎯 Precisão:</span>
+                <strong id="accuracyDisplay">100%</strong>
+            </div>
+            <div class="header-item">
+                <span>✅ Checkpoints:</span>
+                <strong id="checkpointDisplay">0/0</strong>
+            </div>
+            <div class="header-item">
+                <span>⏱️ Tempo:</span>
+                <strong id="timeDisplay">0:00</strong>
+            </div>
+        </div>
+        
+        <div id="canvasContainer">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        
+        <div id="progressBar">
+            <div id="progressFill"></div>
+        </div>
+    </div>
+    
+    <!-- Modal Inicial -->
+    <div id="startModal" class="modal" style="display: flex;">
+        <div class="modal-content">
+            <h2>🎯 Jogo de Coordenação Motora</h2>
+            <p style="font-size: 18px; color: white;">Treine sua precisão e controle!</p>
+            
+            <div class="instructions">
+                <h3>📋 Como Jogar</h3>
+                <p>
+                    Trace o caminho do <span style="color: #48bb78;">●</span> ponto verde 
+                    até o <span style="color: #f56565;">●</span> ponto vermelho, 
+                    seguindo a linha pontilhada e passando pelos checkpoints.
+                </p>
+                <div class="instruction-icons">
+                    <div class="instruction-icon">
+                        <div class="icon">👆</div>
+                        <div class="text">Toque</div>
+                    </div>
+                    <div class="instruction-icon">
+                        <div class="icon">✏️</div>
+                        <div class="text">S Pen</div>
+                    </div>
+                    <div class="instruction-icon">
+                        <div class="icon">🎯</div>
+                        <div class="text">Precisão</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn btn-start" id="startBtn">🚀 Iniciar Jogo</button>
+        </div>
+    </div>
+    
+    <!-- Modal de Fim de Nível -->
+    <div id="endLevelModal" class="modal">
+        <div class="modal-content">
+            <h2 id="levelCompleteTitle">🎉 Nível Completo!</h2>
+            
+            <div class="stars" id="starsContainer">
+                <span class="star" id="star1">★</span>
+                <span class="star" id="star2">★</span>
+                <span class="star" id="star3">★</span>
+            </div>
+            
+            <p style="color: #718096;">Sua pontuação</p>
+            <div class="score-display" id="finalScore">0</div>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="label">Precisão</div>
+                    <div class="value" id="accuracyResult">100%</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">Tempo</div>
+                    <div class="value" id="timeResult">0:00</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">Checkpoints</div>
+                    <div class="value" id="checkpointResult">0/0</div>
+                </div>
+            </div>
+            
+            <p id="nextLevelInfo" style="color: #4fd1c5; font-size: 14px;"></p>
+            
+            <div style="margin-top: 20px;">
+                <button class="btn btn-continue" id="continueBtn">✅ Deseja Continuar</button>
+                <button class="btn btn-exit" id="exitBtn">❌ Encerrar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tela de Encerramento -->
+    <div id="exitScreen">
+        <h2>🏆 Obrigado por Jogar!</h2>
+        <div class="final-stats">
+            <p style="font-size: 18px; color: white;">Resumo da Sessão</p>
+            <div class="stats-grid" style="margin-top: 20px;">
+                <div class="stat-item">
+                    <div class="label">Níveis Completos</div>
+                    <div class="value" id="totalLevels">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">Pontuação Total</div>
+                    <div class="value" id="totalScore">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">Maior Nível</div>
+                    <div class="value" id="maxLevel">0</div>
+                </div>
+            </div>
+        </div>
+        <p style="color: #718096; margin-top: 20px;">Você pode fechar esta aba</p>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/canvas.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
